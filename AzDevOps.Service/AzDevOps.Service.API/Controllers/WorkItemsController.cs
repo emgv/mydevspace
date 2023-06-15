@@ -30,7 +30,7 @@ namespace AzDevOps.Service.Controllers
         }
 
         [HttpGet("get-my-work-items")]
-        public async Task<PagedResponseDto<WorkItemDto>?> GetMyWorkItems(AzWorkItemsSearchParametersDto searchParameteres)
+        public async Task<PagedResponseDto<WorkItemDto>> GetMyWorkItems([FromQuery] AzWorkItemsSearchParametersDto searchParameteres)
         {
             // TODO: check work-items batch request, because it can receive the wit-ids and also the __list of response-fields__
             return await _mediator.Send(new GetMyWorkItemsQuery(searchParameteres));

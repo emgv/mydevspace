@@ -1,6 +1,7 @@
 using AzDevOps.Service.Application.Configurations;
 using AzDevOps.Service.Application.Interfaces.HttpClients;
 using AzDevOps.Service.Application.Interfaces.Wiql;
+using AzDevOps.Service.Application.Queries;
 using AzDevOps.Service.Infrastructure.Builders.Wiql;
 using AzDevOps.Service.Infrastructure.HttpClients;
 using System.Net.Http.Headers;
@@ -12,12 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddOptions<AzDevOpsConfig>("AzDevOps");
+builder.Services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof(GetMyWorkItemsQuery).Assembly));
+builder.Services.AddOptions<AzDevOpsConfig>()
+    .Bind(builder.Configuration.GetSection("AzDevOps"));
 builder.Services.AddHttpClient<IWorkItemsHttpClient, WorkItemsHttpClient>(
     "WitHttpClient",
     (serviceProvider, clientConfig) => {
-        var azConfig = serviceProvider.GetRequiredService<AzDevOpsConfig>();
-        clientConfig.BaseAddress = new Uri($"https://dev.azure.com/{azConfig.Organization}/{azConfig.Project}/_apis");
+        var azConfig = builder.Configuration.GetSection("AzDevOps").Get<AzDevOpsConfig>();
+        clientConfig.BaseAddress = new Uri($"https://dev.azure.com/{azConfig.Organization}/{azConfig.Project}/_apis/");
         clientConfig.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Basic",
             Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(

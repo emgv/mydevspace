@@ -28,18 +28,18 @@ public class WorkItemsHttpClient : IWorkItemsHttpClient
     public async Task<PagedResponseDto<WorkItemDto>> GetMyWorkItems(
         AzWorkItemsSearchParametersDto search, CancellationToken cancellationToken)
     {
-        var uri = $"/wit/wiql?$top={search.PageSize}&api-version={_azConfig.ApiVersion}";
-        var response = await _httpClient.PostAsJsonAsync<WiqlDto>(uri,
-            new()
-            {
-                Query = _wiqlBuilder
+        var uri = $"wit/wiql?$top={search.PageSize}&api-version={_azConfig.ApiVersion}";
+        var query = new WiqlDto()
+        {
+            Query = _wiqlBuilder
                     .AddFilterOnlyByMyWorkItems()
                     .AddPagingByIds(
                         search.SortType, search.CurrentPage, search.NextPage,
-                        search.Interval?.FirstId ?? 0,
-                        search.Interval?.LastId ?? 0)
+                        search.FirstId ?? 0,
+                        search.LastId ?? 0)
                     .Build()
-            }, cancellationToken);
+        };
+        var response = await _httpClient.PostAsJsonAsync<WiqlDto>(uri, query, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         var queryResponse = await response.Content.ReadFromJsonAsync<WiqlResponseDto>(
@@ -72,14 +72,15 @@ public class WorkItemsHttpClient : IWorkItemsHttpClient
             PageIndex = search.NextPage,
             PageSize = search.PageSize,
             SortColumnName = search.SortColumnName,
-            Interval = (workItems.First().Id, workItems.Last().Id),
+            FirstId = workItems.First().Id,
+            LastId = workItems.Last().Id,
             SortType = search.SortType
         };
     }
 
     public async Task<WorkItemDto?> GetWorkItemById(long workItemId, CancellationToken cancellationToken)
     {
-        var uri = $"/wit/workitems/{workItemId}?api-version={_azConfig.ApiVersion}";
+        var uri = $"wit/workitems/{workItemId}?api-version={_azConfig.ApiVersion}";
         return await _httpClient.GetFromJsonAsync<WorkItemDto>(uri, cancellationToken);
     }
 }
